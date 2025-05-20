@@ -1,7 +1,7 @@
 // src/app/(main)/recipes/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { RecipeSearchForm } from '@/components/recipes/recipe-search';
 import { RecipeCard } from '@/components/recipes/recipe-card';
@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useRecipeSearch } from '@/hooks/use-recipes';
 import { RecipeSearchParams } from '@/types/recipe';
 
-export default function RecipesPage() {
+function RecipesContent() {
   const searchParams = useSearchParams();
   const [initialParams, setInitialParams] = useState<RecipeSearchParams>({});
 
@@ -146,5 +146,29 @@ export default function RecipesPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function RecipesPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-8">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">Explorar Recetas</h1>
+          <p className="text-muted-foreground">Cargando...</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {Array(8).fill(null).map((_, i) => (
+            <div key={i} className="space-y-3">
+              <Skeleton className="aspect-video w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-2/3" />
+            </div>
+          ))}
+        </div>
+      </div>
+    }>
+      <RecipesContent />
+    </Suspense>
   );
 }

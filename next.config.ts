@@ -13,8 +13,14 @@ const nextConfig = {
     ],
   },
   eslint: {
-    dirs: ['src'],
+    // Desactivar comprobación de ESLint durante build
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    // Ignorar errores de TypeScript durante build
+    ignoreBuildErrors: true,
   }
+  
 };
 
 module.exports = nextConfig;

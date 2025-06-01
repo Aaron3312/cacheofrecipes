@@ -151,13 +151,15 @@ export function RecipeCard({ recipe, variant = 'default' }: RecipeCardProps) {
             {recipe.title}
           </h3>
           
-          {/* Rating */}
+          {/* Rating - SIN auto-load para evitar requests innecesarios */}
           <div className="mb-3">
             <RecipeRating 
               recipeId={recipe.id} 
               size="sm" 
               showCount={false}
+              autoLoad={true} // NO cargar automáticamente en las cards
               className="justify-start"
+
             />
           </div>
 

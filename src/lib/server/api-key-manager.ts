@@ -17,6 +17,8 @@ class ServerApiKeyManager {
     process.env.SPOONACULAR_API_KEY_6 || '',
     process.env.SPOONACULAR_API_KEY_7 || '',
     process.env.SPOONACULAR_API_KEY_8 || '',
+    process.env.SPOONACULAR_API_KEY_9 || '',
+    process.env.SPOONACULAR_API_KEY_10 || ''
   ].filter(key => key.length > 0); // Filtrar keys vacías
 
   private keyStatuses: Map<string, ApiKeyStatus> = new Map();
@@ -25,6 +27,24 @@ class ServerApiKeyManager {
 
   constructor() {
     if (this.apiKeys.length === 0) {
+      console.error('❌ No se encontraron API keys de Spoonacular en las variables de entorno');
+      console.log('📋 Variables disponibles:', {
+        KEY_1: process.env.SPOONACULAR_API_KEY_1 ? 'SET' : 'NOT SET',
+        KEY_2: process.env.SPOONACULAR_API_KEY_2 ? 'SET' : 'NOT SET',
+        KEY_3: process.env.SPOONACULAR_API_KEY_3 ? 'SET' : 'NOT SET',
+        KEY_4: process.env.SPOONACULAR_API_KEY_4 ? 'SET' : 'NOT SET',
+        KEY_5: process.env.SPOONACULAR_API_KEY_5 ? 'SET' : 'NOT SET',
+        KEY_6: process.env.SPOONACULAR_API_KEY_6 ? 'SET' : 'NOT SET',
+        KEY_7: process.env.SPOONACULAR_API_KEY_7 ? 'SET' : 'NOT SET',
+        KEY_8: process.env.SPOONACULAR_API_KEY_8 ? 'SET' : 'NOT SET',
+        KEY_9: process.env.SPOONACULAR_API_KEY_9 ? 'SET' : 'NOT SET',
+        KEY_10: process.env.SPOONACULAR_API_KEY_10 ? 'SET' : 'NOT SET',
+        KEY_11: process.env.SPOONACULAR_API_KEY_11 ? 'SET' : 'NOT SET',
+        KEY_12: process.env.SPOONACULAR_API_KEY_12 ? 'SET' : 'NOT SET',
+        KEY_13: process.env.SPOONACULAR_API_KEY_13 ? 'SET' : 'NOT SET',
+        KEY_14: process.env.SPOONACULAR_API_KEY_14 ? 'SET' : 'NOT SET',
+        
+      });
       throw new Error('No se encontraron API keys de Spoonacular en las variables de entorno');
     }
 

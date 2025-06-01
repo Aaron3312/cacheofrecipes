@@ -10,15 +10,17 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} CacheOfRecipes. Todos los derechos reservados.
           </p>
           <div className="flex items-center space-x-4">
-            <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground">
-              Acerca de
-            </Link>
-            <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground">
-              Términos
-            </Link>
-            <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground">
-              Privacidad
-            </Link>
+                <p className="text-sm mt-2">
+                  Datos de recetas proporcionados por{' '}
+                  <a 
+                    href="https://spoonacular.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    Spoonacular API
+                  </a>
+                </p>
           </div>
         </div>
       </div>

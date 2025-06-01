@@ -2,9 +2,24 @@
 import axios, { AxiosResponse } from 'axios';
 import { Recipe, RecipeDetail, RecipeSearchResponse, RecipeSearchParams } from '@/types/recipe';
 
+// Obtener la URL base del API de forma inteligente
+function getApiBaseUrl(): string {
+  // En el cliente, usar la URL actual del navegador
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  
+  // En el servidor, usar las variables de entorno
+  return process.env.NEXT_PUBLIC_API_URL || 
+         process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
+         'http://localhost:3000';
+}
+
 // Usar nuestro proxy en lugar de llamar directamente a Spoonacular
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const BASE_URL = getApiBaseUrl();
 const PROXY_PATH = '/api/spoonacular';
+
+console.log('🌐 API Base URL:', BASE_URL);
 
 const apiClient = axios.create({
   baseURL: `${BASE_URL}${PROXY_PATH}`,

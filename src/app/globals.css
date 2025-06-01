@@ -117,6 +117,24 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-300 ease-in-out;
+  }
+}
+
+/* Animaciones y mejoras para el tema */
+@layer components {
+  .theme-transition {
+    @apply transition-colors duration-300 ease-in-out;
+  }
+  
+  .glass-effect {
+    @apply backdrop-blur-md bg-background/80 border border-border/50;
+  }
+}
+
+/* Mejoras específicas para el modo oscuro */
+@layer utilities {
+  .dark-mode-shadow {
+    @apply dark:shadow-lg dark:shadow-black/25;
   }
 }

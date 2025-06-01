@@ -27,31 +27,23 @@ export const useReviews = (recipeId?: number) => {
   const [error, setError] = useState<string | null>(null);
   const [userReview, setUserReview] = useState<Review | null>(null);
 
-  // Función helper para convertir timestamp de Firestore a Date
+  // Función helper para convertir timestamp de Firestore a Date (simplificada)
   const convertTimestamp = (timestamp: any): Date => {
     if (!timestamp) {
-      return new Date(); // Fecha actual como fallback
+      return new Date();
     }
     
-    if (timestamp instanceof Timestamp) {
+    // Si es un Timestamp de Firestore, usar toDate()
+    if (timestamp instanceof Timestamp || (timestamp && typeof timestamp.toDate === 'function')) {
       return timestamp.toDate();
     }
     
-    if (timestamp.toDate && typeof timestamp.toDate === 'function') {
-      return timestamp.toDate();
-    }
-    
+    // Si ya es una Date, devolverla
     if (timestamp instanceof Date) {
       return timestamp;
     }
     
-    // Si es un string o número, intentar crear Date
-    if (typeof timestamp === 'string' || typeof timestamp === 'number') {
-      const date = new Date(timestamp);
-      return isNaN(date.getTime()) ? new Date() : date;
-    }
-    
-    // Fallback a fecha actual
+    // Fallback
     return new Date();
   };
 
@@ -82,23 +74,17 @@ export const useReviews = (recipeId?: number) => {
           const loadedReviews = snapshot.docs.map((docSnapshot) => {
             const data = docSnapshot.data();
             
-            // Validar que los campos requeridos existan
-            if (!data.userId || !data.recipeId || typeof data.rating !== 'number') {
-              console.warn('Documento de review incompleto:', docSnapshot.id, data);
-              return null;
-            }
-            
             return {
               id: docSnapshot.id,
-              userId: data.userId,
-              recipeId: data.recipeId,
-              rating: data.rating,
+              userId: data.userId || '',
+              recipeId: data.recipeId || recipeId,
+              rating: data.rating || 5,
               comment: data.comment || '',
               createdAt: convertTimestamp(data.createdAt),
-              userName: data.userName || 'Usuario Anónimo',
+              userName: data.userName || 'Usuario',
               userPhotoURL: data.userPhotoURL || null,
             } as Review;
-          }).filter(Boolean) as Review[]; // Filtrar valores null
+          });
           
           setReviews(loadedReviews);
           
@@ -113,7 +99,7 @@ export const useReviews = (recipeId?: number) => {
           }
           
           setLoading(false);
-          setError(null); // Limpiar errores previos
+          setError(null);
           
         } catch (err) {
           console.error('Error loading reviews:', err);
@@ -153,13 +139,11 @@ export const useReviews = (recipeId?: number) => {
       throw new Error(errorMsg);
     }
 
-    setError(null); // Limpiar errores previos
+    setError(null);
 
     try {
-      // Obtener el nombre de usuario más actual
-      const userName = user.firstName && user.lastName 
-        ? `${user.firstName} ${user.lastName}`
-        : user.displayName || 'Usuario';
+      // Obtener el nombre de usuario (simplificado)
+      const userName = user.displayName || 'Usuario';
 
       if (userReview) {
         // Actualizar reseña existente
@@ -167,7 +151,7 @@ export const useReviews = (recipeId?: number) => {
           rating,
           comment: comment.trim(),
           updatedAt: serverTimestamp(),
-          userName, // Actualizar nombre por si cambió
+          userName,
           userPhotoURL: user.photoURL,
         });
       } else {
@@ -203,7 +187,7 @@ export const useReviews = (recipeId?: number) => {
       return;
     }
 
-    setError(null); // Limpiar errores previos
+    setError(null);
 
     try {
       await deleteDoc(doc(db, 'reviews', userReview.id));
@@ -231,7 +215,7 @@ export const useReviews = (recipeId?: number) => {
     }
     
     const sum = validRatings.reduce((total, review) => total + review.rating, 0);
-    return Math.round((sum / validRatings.length) * 10) / 10; // Redondear a 1 decimal
+    return Math.round((sum / validRatings.length) * 10) / 10;
   };
 
   // Obtener conteo de reseñas por rating

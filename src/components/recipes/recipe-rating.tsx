@@ -11,17 +11,29 @@ interface RecipeRatingProps {
   size?: 'sm' | 'md' | 'lg';
   showCount?: boolean;
   className?: string;
+  // Nueva prop para controlar si debe cargar datos automáticamente
+  autoLoad?: boolean;
 }
 
-export function RecipeRating({ recipeId, size = 'md', showCount = true, className }: RecipeRatingProps) {
-  const { reviews, getAverageRating, loading } = useReviews(recipeId);
+export function RecipeRating({ 
+  recipeId, 
+  size = 'md', 
+  showCount = true, 
+  className,
+  autoLoad = false // Por defecto NO carga automáticamente
+}: RecipeRatingProps) {
   const [average, setAverage] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
+  
+  // Solo usar el hook si autoLoad está habilitado
+  const { reviews, getAverageRating, loading } = useReviews(autoLoad ? recipeId : undefined);
   
   useEffect(() => {
-    if (!loading) {
+    if (autoLoad && !loading && reviews.length >= 0) {
       setAverage(getAverageRating());
+      setReviewCount(reviews.length);
     }
-  }, [reviews, getAverageRating, loading]);
+  }, [reviews, getAverageRating, loading, autoLoad]);
   
   const starSizes = {
     sm: 'h-3 w-3',
@@ -34,6 +46,27 @@ export function RecipeRating({ recipeId, size = 'md', showCount = true, classNam
     md: 'text-sm',
     lg: 'text-base',
   };
+
+  // Si no está configurado para cargar automáticamente, mostrar placeholder
+  if (!autoLoad) {
+    return (
+      <div className={cn("flex items-center", className)}>
+        <div className="flex">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Star
+              key={star}
+              className={cn(starSizes[size], "text-muted-foreground/30 fill-none")}
+            />
+          ))}
+        </div>
+        {showCount && (
+          <span className={cn("ml-2 text-muted-foreground", textSizes[size])}>
+            Sin reseñas
+          </span>
+        )}
+      </div>
+    );
+  }
 
   // Si está cargando, mostrar esqueleto
   if (loading) {
@@ -73,7 +106,7 @@ export function RecipeRating({ recipeId, size = 'md', showCount = true, classNam
       {showCount && (
         <span className={cn("ml-2 text-muted-foreground", textSizes[size])}>
           {average > 0 
-            ? `${average.toFixed(1)} (${reviews.length})`
+            ? `${average.toFixed(1)} (${reviewCount})`
             : 'Sin reseñas'}
         </span>
       )}

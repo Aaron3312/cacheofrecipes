@@ -1,17 +1,38 @@
 // src/app/layout.tsx
-import '@/app/globals.css';
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import Header from '@/components/layout/header';
-import Footer from '@/components/layout/footer';
-import { Providers } from '@/components/providers';
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
+import { Providers } from '@/components/providers'
+import Header from '@/components/layout/header'
+import Footer from '@/components/layout/footer'
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'CacheOfRecipes - Encuentra y guarda tus recetas favoritas',
-  description: 'Busca recetas, guarda tus favoritas, califica y revisa recetas en CacheOfRecipes',
-};
+  title: 'CacheOfRecipes - Descubre y Guarda tus Recetas Favoritas',
+  description: 'Una aplicación moderna para descubrir, buscar y guardar tus recetas favoritas. Encuentra inspiración culinaria para cualquier ocasión.',
+  keywords: ['recetas', 'cocina', 'comida', 'ingredientes', 'chef'],
+  authors: [{ name: 'CacheOfRecipes Team' }],
+  creator: 'CacheOfRecipes',
+  publisher: 'CacheOfRecipes',
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'es_ES',
+    url: 'https://cacheofrecipes.com',
+    siteName: 'CacheOfRecipes',
+    title: 'CacheOfRecipes - Descubre y Guarda tus Recetas Favoritas',
+    description: 'Una aplicación moderna para descubrir, buscar y guardar tus recetas favoritas.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'CacheOfRecipes - Descubre y Guarda tus Recetas Favoritas',
+    description: 'Una aplicación moderna para descubrir, buscar y guardar tus recetas favoritas.',
+  },
+}
 
 export default function RootLayout({
   children,
@@ -19,12 +40,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="es">
-      <body className={inter.className}>
+    <html lang="es" suppressHydrationWarning>
+      <body className={`${inter.className} theme-transition`}>
         <Providers>
-          <div className="relative flex min-h-screen flex-col">
+          <div className="min-h-screen flex flex-col">
             <Header />
-            <main className="flex-1">
+            <main className="flex-1 container mx-auto px-4 py-8">
               {children}
             </main>
             <Footer />
@@ -32,5 +53,5 @@ export default function RootLayout({
         </Providers>
       </body>
     </html>
-  );
+  )
 }

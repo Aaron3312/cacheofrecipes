@@ -147,9 +147,12 @@ export function RecipeDetailView({ recipe }: RecipeDetailViewProps) {
             <Users className="h-5 w-5 mr-2 text-muted-foreground" />
             <span>{recipe.servings} porciones</span>
           </div>
-          <RecipeRating recipeId={recipe.id} />
+          <RecipeRating 
+            recipeId={recipe.id} 
+            autoLoad={true} // SÍ cargar automáticamente en la página de detalles
+          />
         </div>
-        
+
         {/* Etiquetas */}
         <div className="flex flex-wrap gap-2">
           {recipe.vegetarian && (
@@ -334,7 +337,7 @@ export function RecipeDetailView({ recipe }: RecipeDetailViewProps) {
         <h2 className="text-xl font-medium mb-4">Reseñas</h2>
         <RecipeReviews recipeId={recipe.id} />
       </div>
-      
+
       {/* Recetas similares */}
       <div className="mt-8">
         <h2 className="text-xl font-medium mb-4">Recetas Similares</h2>

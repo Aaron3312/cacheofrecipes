@@ -13,7 +13,8 @@ import {
   doc, 
   serverTimestamp,
   onSnapshot,
-  orderBy
+  orderBy,
+  Timestamp
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/auth-context';
@@ -25,6 +26,34 @@ export const useReviews = (recipeId?: number) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userReview, setUserReview] = useState<Review | null>(null);
+
+  // Función helper para convertir timestamp de Firestore a Date
+  const convertTimestamp = (timestamp: any): Date => {
+    if (!timestamp) {
+      return new Date(); // Fecha actual como fallback
+    }
+    
+    if (timestamp instanceof Timestamp) {
+      return timestamp.toDate();
+    }
+    
+    if (timestamp.toDate && typeof timestamp.toDate === 'function') {
+      return timestamp.toDate();
+    }
+    
+    if (timestamp instanceof Date) {
+      return timestamp;
+    }
+    
+    // Si es un string o número, intentar crear Date
+    if (typeof timestamp === 'string' || typeof timestamp === 'number') {
+      const date = new Date(timestamp);
+      return isNaN(date.getTime()) ? new Date() : date;
+    }
+    
+    // Fallback a fecha actual
+    return new Date();
+  };
 
   // Cargar reseñas para una receta específica
   useEffect(() => {
@@ -50,19 +79,26 @@ export const useReviews = (recipeId?: number) => {
       q,
       (snapshot) => {
         try {
-          const loadedReviews = snapshot.docs.map((doc) => {
-            const data = doc.data();
+          const loadedReviews = snapshot.docs.map((docSnapshot) => {
+            const data = docSnapshot.data();
+            
+            // Validar que los campos requeridos existan
+            if (!data.userId || !data.recipeId || typeof data.rating !== 'number') {
+              console.warn('Documento de review incompleto:', docSnapshot.id, data);
+              return null;
+            }
+            
             return {
-              id: doc.id,
+              id: docSnapshot.id,
               userId: data.userId,
               recipeId: data.recipeId,
               rating: data.rating,
-              comment: data.comment,
-              createdAt: data.createdAt.toDate(),
-              userName: data.userName,
-              userPhotoURL: data.userPhotoURL,
+              comment: data.comment || '',
+              createdAt: convertTimestamp(data.createdAt),
+              userName: data.userName || 'Usuario Anónimo',
+              userPhotoURL: data.userPhotoURL || null,
             } as Review;
-          });
+          }).filter(Boolean) as Review[]; // Filtrar valores null
           
           setReviews(loadedReviews);
           
@@ -77,6 +113,8 @@ export const useReviews = (recipeId?: number) => {
           }
           
           setLoading(false);
+          setError(null); // Limpiar errores previos
+          
         } catch (err) {
           console.error('Error loading reviews:', err);
           setError('Error al cargar reseñas');
@@ -97,22 +135,40 @@ export const useReviews = (recipeId?: number) => {
   // Añadir o actualizar reseña
   const addOrUpdateReview = async (rating: number, comment: string): Promise<void> => {
     if (!user) {
-      setError('Debes iniciar sesión para añadir reseñas');
-      throw new Error('Debes iniciar sesión para añadir reseñas');
+      const errorMsg = 'Debes iniciar sesión para añadir reseñas';
+      setError(errorMsg);
+      throw new Error(errorMsg);
     }
 
     if (!recipeId) {
-      setError('ID de receta no válido');
-      throw new Error('ID de receta no válido');
+      const errorMsg = 'ID de receta no válido';
+      setError(errorMsg);
+      throw new Error(errorMsg);
     }
 
+    // Validar rating
+    if (typeof rating !== 'number' || rating < 1 || rating > 5) {
+      const errorMsg = 'La calificación debe ser un número entre 1 y 5';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    setError(null); // Limpiar errores previos
+
     try {
+      // Obtener el nombre de usuario más actual
+      const userName = user.firstName && user.lastName 
+        ? `${user.firstName} ${user.lastName}`
+        : user.displayName || 'Usuario';
+
       if (userReview) {
         // Actualizar reseña existente
         await updateDoc(doc(db, 'reviews', userReview.id), {
           rating,
-          comment,
+          comment: comment.trim(),
           updatedAt: serverTimestamp(),
+          userName, // Actualizar nombre por si cambió
+          userPhotoURL: user.photoURL,
         });
       } else {
         // Añadir nueva reseña
@@ -120,37 +176,43 @@ export const useReviews = (recipeId?: number) => {
           userId: user.uid,
           recipeId,
           rating,
-          comment,
+          comment: comment.trim(),
           createdAt: serverTimestamp(),
-          userName: user.displayName || 'Usuario',
+          userName,
           userPhotoURL: user.photoURL,
         });
       }
     } catch (err) {
       console.error('Error adding/updating review:', err);
-      setError('Error al guardar la reseña');
-      throw new Error('Error al guardar la reseña');
+      const errorMsg = 'Error al guardar la reseña';
+      setError(errorMsg);
+      throw new Error(errorMsg);
     }
   };
 
   // Eliminar reseña
   const deleteReview = async (): Promise<void> => {
     if (!user) {
-      setError('Debes iniciar sesión para eliminar reseñas');
-      throw new Error('Debes iniciar sesión para eliminar reseñas');
+      const errorMsg = 'Debes iniciar sesión para eliminar reseñas';
+      setError(errorMsg);
+      throw new Error(errorMsg);
     }
 
     if (!userReview) {
+      console.warn('No hay reseña del usuario para eliminar');
       return;
     }
+
+    setError(null); // Limpiar errores previos
 
     try {
       await deleteDoc(doc(db, 'reviews', userReview.id));
       setUserReview(null);
     } catch (err) {
       console.error('Error deleting review:', err);
-      setError('Error al eliminar la reseña');
-      throw new Error('Error al eliminar la reseña');
+      const errorMsg = 'Error al eliminar la reseña';
+      setError(errorMsg);
+      throw new Error(errorMsg);
     }
   };
 
@@ -160,8 +222,34 @@ export const useReviews = (recipeId?: number) => {
       return 0;
     }
     
-    const sum = reviews.reduce((total, review) => total + review.rating, 0);
-    return sum / reviews.length;
+    const validRatings = reviews.filter(review => 
+      typeof review.rating === 'number' && !isNaN(review.rating)
+    );
+    
+    if (validRatings.length === 0) {
+      return 0;
+    }
+    
+    const sum = validRatings.reduce((total, review) => total + review.rating, 0);
+    return Math.round((sum / validRatings.length) * 10) / 10; // Redondear a 1 decimal
+  };
+
+  // Obtener conteo de reseñas por rating
+  const getRatingDistribution = () => {
+    const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    
+    reviews.forEach(review => {
+      if (review.rating >= 1 && review.rating <= 5) {
+        distribution[review.rating as keyof typeof distribution]++;
+      }
+    });
+    
+    return distribution;
+  };
+
+  // Limpiar errores manualmente
+  const clearError = () => {
+    setError(null);
   };
 
   return {
@@ -172,5 +260,8 @@ export const useReviews = (recipeId?: number) => {
     addOrUpdateReview,
     deleteReview,
     getAverageRating,
+    getRatingDistribution,
+    clearError,
+    totalReviews: reviews.length,
   };
 };

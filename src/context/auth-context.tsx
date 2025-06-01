@@ -9,11 +9,14 @@ import {
   onAuthStateChanged, 
   updateProfile as firebaseUpdateProfile,
   sendPasswordResetEmail,
+  signInWithPopup,
+  GoogleAuthProvider,
   User as FirebaseUser
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { User, AuthContextType, AuthState } from '@/types/auth';
+import { processGoogleImageUrl } from '@/lib/image-utils';
 
 // Valores por defecto del contexto
 const initialState: AuthState = {
@@ -26,6 +29,7 @@ const initialState: AuthState = {
 const AuthContext = createContext<AuthContextType>({
   ...initialState,
   login: async () => {},
+  loginWithGoogle: async () => {},
   register: async () => {},
   logout: async () => {},
   resetPassword: async () => {},
@@ -41,11 +45,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Convertir usuario de Firebase a nuestro tipo User
   const formatUser = async (user: FirebaseUser): Promise<User> => {
+    // Procesar la URL de la imagen de Google
+    const processedPhotoURL = processGoogleImageUrl(user.photoURL);
+    
     const userData = {
       uid: user.uid,
       email: user.email!,
+      firstName: null,
+      lastName: null,
       displayName: user.displayName,
-      photoURL: user.photoURL,
+      photoURL: processedPhotoURL,
+      bio: null,
       createdAt: new Date(),
     };
 
@@ -57,8 +67,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const createdAt = userDocData.createdAt ? 
         new Date(userDocData.createdAt.toDate()) : new Date();
       
+      // Procesar la URL de la imagen almacenada en Firestore también
+      const storedPhotoURL = processGoogleImageUrl(userDocData.photoURL);
+      
       return {
         ...userData,
+        firstName: userDocData.firstName || null,
+        lastName: userDocData.lastName || null,
+        bio: userDocData.bio || null,
+        photoURL: storedPhotoURL || processedPhotoURL,
         createdAt,
       };
     }
@@ -129,24 +146,101 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Función para iniciar sesión con Google
+  const loginWithGoogle = async () => {
+    setAuthState((prev) => ({ ...prev, loading: true, error: null }));
+    
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.addScope('profile');
+      provider.addScope('email');
+      
+      const userCredential = await signInWithPopup(auth, provider);
+      
+      // Procesar la URL de la imagen de Google
+      const processedPhotoURL = processGoogleImageUrl(userCredential.user.photoURL);
+      
+      // Verificar si es un usuario nuevo y crear perfil en Firestore si es necesario
+      const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+      if (!userDoc.exists()) {
+        // Extraer nombre y apellido del displayName si es posible
+        const displayName = userCredential.user.displayName || '';
+        const nameParts = displayName.split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        await setDoc(doc(db, 'users', userCredential.user.uid), {
+          uid: userCredential.user.uid,
+          email: userCredential.user.email,
+          firstName,
+          lastName,
+          displayName: userCredential.user.displayName,
+          photoURL: processedPhotoURL,
+          bio: null,
+          createdAt: serverTimestamp(),
+        });
+      } else {
+        // Actualizar la foto de perfil si es necesario
+        const userData = userDoc.data();
+        if (userData.photoURL !== processedPhotoURL) {
+          await setDoc(doc(db, 'users', userCredential.user.uid), {
+            photoURL: processedPhotoURL,
+            updatedAt: serverTimestamp(),
+          }, { merge: true });
+        }
+      }
+      
+      const formattedUser = await formatUser(userCredential.user);
+      
+      setAuthState({
+        user: formattedUser,
+        loading: false,
+        error: null,
+      });
+    } catch (error: any) {
+      console.error('Error al iniciar sesión con Google:', error);
+      
+      let errorMessage = 'Error al iniciar sesión con Google';
+      if (error.code === 'auth/popup-closed-by-user') {
+        errorMessage = 'Inicio de sesión cancelado';
+      } else if (error.code === 'auth/popup-blocked') {
+        errorMessage = 'Popup bloqueado. Por favor, permite popups para este sitio.';
+      }
+      
+      setAuthState((prev) => ({
+        ...prev,
+        loading: false,
+        error: errorMessage,
+      }));
+      
+      throw new Error(errorMessage);
+    }
+  };
+
   // Función para registrar un nuevo usuario
-  const register = async (email: string, password: string, name: string) => {
+  const register = async (email: string, password: string, firstName: string, lastName: string) => {
     setAuthState((prev) => ({ ...prev, loading: true, error: null }));
     
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
+      // Crear displayName combinando nombre y apellido
+      const displayName = `${firstName} ${lastName}`.trim();
+      
       // Actualizar el perfil con el nombre
       await firebaseUpdateProfile(userCredential.user, {
-        displayName: name,
+        displayName,
       });
       
       // Guardar en Firestore
       await setDoc(doc(db, 'users', userCredential.user.uid), {
         uid: userCredential.user.uid,
         email,
-        displayName: name,
+        firstName,
+        lastName,
+        displayName,
         photoURL: null,
+        bio: null,
         createdAt: serverTimestamp(),
       });
       
@@ -163,6 +257,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       let errorMessage = 'Error al registrar el usuario';
       if (error.code === 'auth/email-already-in-use') {
         errorMessage = 'Este correo ya está en uso';
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'La contraseña es muy débil';
       }
       
       setAuthState((prev) => ({
@@ -217,24 +313,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setAuthState((prev) => ({ ...prev, loading: true, error: null }));
 
     try {
+      // Actualizar displayName si se cambiaron firstName o lastName
+      let displayName = data.displayName;
+      if (data.firstName !== undefined || data.lastName !== undefined) {
+        const firstName = data.firstName !== undefined ? data.firstName : authState.user.firstName;
+        const lastName = data.lastName !== undefined ? data.lastName : authState.user.lastName;
+        displayName = `${firstName || ''} ${lastName || ''}`.trim();
+      }
+
+      // Procesar la URL de la imagen
+      const processedPhotoURL = data.photoURL ? processGoogleImageUrl(data.photoURL) : data.photoURL;
+
       // Actualizar en Firebase Auth
-      if (data.displayName || data.photoURL) {
+      if (displayName || processedPhotoURL !== undefined) {
         await firebaseUpdateProfile(auth.currentUser, {
-          displayName: data.displayName || auth.currentUser.displayName,
-          photoURL: data.photoURL || auth.currentUser.photoURL,
+          displayName: displayName || auth.currentUser.displayName,
+          photoURL: processedPhotoURL !== undefined ? processedPhotoURL : auth.currentUser.photoURL,
         });
+      }
+
+      // Preparar datos para Firestore
+      const updateData = { ...data };
+      if (displayName) {
+        updateData.displayName = displayName;
+      }
+      if (processedPhotoURL !== undefined) {
+        updateData.photoURL = processedPhotoURL;
       }
 
       // Actualizar en Firestore
       await setDoc(doc(db, 'users', auth.currentUser.uid), {
-        ...data,
+        ...updateData,
         updatedAt: serverTimestamp(),
       }, { merge: true });
 
       // Actualizar el estado
       setAuthState((prev) => ({
         ...prev,
-        user: prev.user ? { ...prev.user, ...data } : null,
+        user: prev.user ? { ...prev.user, ...updateData } : null,
         loading: false,
         error: null,
       }));
@@ -253,6 +369,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const value: AuthContextType = {
     ...authState,
     login,
+    loginWithGoogle,
     register,
     logout,
     resetPassword,

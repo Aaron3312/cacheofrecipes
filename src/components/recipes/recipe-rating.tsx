@@ -1,4 +1,3 @@
-
 // src/components/recipes/recipe-rating.tsx
 'use client';
 
@@ -15,12 +14,14 @@ interface RecipeRatingProps {
 }
 
 export function RecipeRating({ recipeId, size = 'md', showCount = true, className }: RecipeRatingProps) {
-  const { reviews, getAverageRating } = useReviews(recipeId);
+  const { reviews, getAverageRating, loading } = useReviews(recipeId);
   const [average, setAverage] = useState(0);
   
   useEffect(() => {
-    setAverage(getAverageRating());
-  }, [reviews, getAverageRating]);
+    if (!loading) {
+      setAverage(getAverageRating());
+    }
+  }, [reviews, getAverageRating, loading]);
   
   const starSizes = {
     sm: 'h-3 w-3',
@@ -33,6 +34,25 @@ export function RecipeRating({ recipeId, size = 'md', showCount = true, classNam
     md: 'text-sm',
     lg: 'text-base',
   };
+
+  // Si está cargando, mostrar esqueleto
+  if (loading) {
+    return (
+      <div className={cn("flex items-center", className)}>
+        <div className="flex animate-pulse">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Star
+              key={star}
+              className={cn(starSizes[size], "text-muted-foreground/20")}
+            />
+          ))}
+        </div>
+        {showCount && (
+          <div className={cn("ml-2 bg-muted animate-pulse rounded h-4 w-16", textSizes[size])} />
+        )}
+      </div>
+    );
+  }
   
   return (
     <div className={cn("flex items-center", className)}>
@@ -44,7 +64,7 @@ export function RecipeRating({ recipeId, size = 'md', showCount = true, classNam
               starSizes[size],
               star <= Math.round(average) 
                 ? "text-yellow-400 fill-yellow-400" 
-                : "text-muted stroke-muted-foreground fill-none"
+                : "text-muted-foreground/30 fill-none"
             )}
           />
         ))}
@@ -53,11 +73,10 @@ export function RecipeRating({ recipeId, size = 'md', showCount = true, classNam
       {showCount && (
         <span className={cn("ml-2 text-muted-foreground", textSizes[size])}>
           {average > 0 
-            ? `${average.toFixed(1)} (${reviews.length} ${reviews.length === 1 ? 'reseña' : 'reseñas'})`
+            ? `${average.toFixed(1)} (${reviews.length})`
             : 'Sin reseñas'}
         </span>
       )}
     </div>
   );
 }
-

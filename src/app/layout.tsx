@@ -15,6 +15,11 @@ export const metadata: Metadata = {
   authors: [{ name: 'CacheOfRecipes Team' }],
   creator: 'CacheOfRecipes',
   publisher: 'CacheOfRecipes',
+  icons: {
+    icon: '/favicon.png',
+    shortcut: '/favicon.png',
+    apple: '/favicon.png',
+  },
   robots: {
     index: true,
     follow: true,
@@ -26,6 +31,7 @@ export const metadata: Metadata = {
     siteName: 'CacheOfRecipes',
     title: 'CacheOfRecipes - Descubre y Guarda tus Recetas Favoritas',
     description: 'Una aplicación moderna para descubrir, buscar y guardar tus recetas favoritas.',
+    images: ['/favicon.png'],
   },
   twitter: {
     card: 'summary_large_image',

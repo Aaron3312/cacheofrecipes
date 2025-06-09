@@ -16,6 +16,7 @@
 ## 🛠️ Tecnologías Utilizadas
 
 ### Frontend
+
 - **Next.js 15.3.2** - Framework React con SSR/SSG
 - **React 19** - Biblioteca de interfaz de usuario
 - **TypeScript** - Tipado estático
@@ -28,6 +29,7 @@
 - **Lucide React** - Iconografía moderna
 
 ### Backend y Servicios
+
 - **Firebase** - Autenticación y base de datos
   - Authentication (Email/Password y Google)
   - Firestore (base de datos NoSQL)
@@ -36,6 +38,7 @@
 - **Axios** - Cliente HTTP para requests API
 
 ### Herramientas de Desarrollo
+
 - **ESLint** - Linting de código
 - **PostCSS** - Procesamiento de CSS
 - **Next Themes** - Gestión de temas
@@ -70,23 +73,27 @@ src/
 ## 🚀 Instalación y Configuración
 
 ### Prerequisitos
-- Node.js 18+ 
+
+- Node.js 18+
 - npm o yarn
 - Cuenta de Firebase
 - API Key de Spoonacular
 
 ### 1. Clona el repositorio
+
 ```bash
 git clone https://github.com/tuusuario/cacheofrecipes.git
 cd cacheofrecipes
 ```
 
 ### 2. Instala las dependencias
+
 ```bash
 npm install
 ```
 
 ### 3. Configura las variables de entorno
+
 Crea un archivo `.env.local` en la raíz del proyecto:
 
 ```env
@@ -106,6 +113,7 @@ NEXT_PUBLIC_API_URL=https://tu-dominio.com
 ```
 
 ### 4. Configura Firebase
+
 1. Crea un proyecto en [Firebase Console](https://console.firebase.google.com/)
 2. Habilita Authentication (Email/Password y Google)
 3. Crea una base de datos Firestore
@@ -120,14 +128,14 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
-    
+
     // Reglas para reseñas
     match /reviews/{document} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
-    
+
     // Reglas para usuarios
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
@@ -137,11 +145,13 @@ service cloud.firestore {
 ```
 
 ### 5. Obtén una API Key de Spoonacular
+
 1. Registrate en [Spoonacular API](https://spoonacular.com/food-api)
 2. Obtén tu API key desde el dashboard
 3. Para mejor rendimiento, considera obtener múltiples keys
 
 ### 6. Ejecuta la aplicación
+
 ```bash
 # Desarrollo
 npm run dev
@@ -156,6 +166,7 @@ La aplicación estará disponible en `http://localhost:3000`
 ## 🔧 Funcionalidades Detalladas
 
 ### Autenticación
+
 - **Registro con email**: Validación completa de formularios
 - **Inicio de sesión**: Persistencia de sesión
 - **Google OAuth**: Integración nativa con Firebase Auth
@@ -163,6 +174,7 @@ La aplicación estará disponible en `http://localhost:3000`
 - **Restablecimiento de contraseña**: Por email
 
 ### Búsqueda de Recetas
+
 - **Filtros avanzados**: Por cocina, dieta, intolerancia, tiempo de preparación
 - **Búsqueda por texto**: Título, ingredientes o descripción
 - **Ordenamiento**: Por popularidad, tiempo, puntuación nutricional
@@ -170,18 +182,21 @@ La aplicación estará disponible en `http://localhost:3000`
 - **Recetas similares**: Recomendaciones basadas en selección
 
 ### Gestión de Favoritos
+
 - **Añadir/quitar favoritos**: Con feedback visual inmediato
 - **Persistencia**: Sincronización con Firebase Firestore
 - **Carga optimizada**: Lazy loading de detalles de recetas
 - **Vista dedicada**: Página especial para gestionar favoritos
 
 ### Sistema de Reseñas
+
 - **Calificación por estrellas**: Sistema de 1 a 5 estrellas
 - **Comentarios**: Texto libre para opiniones detalladas
 - **Agregación**: Cálculo automático de puntuación promedio
 - **Validación**: Solo usuarios autenticados pueden reseñar
 
 ### Gestión de API
+
 - **Múltiples claves**: Balanceo automático de carga
 - **Reintentos inteligentes**: Manejo robusto de errores
 - **Límites de rate**: Respeto de las limitaciones de la API
@@ -190,12 +205,14 @@ La aplicación estará disponible en `http://localhost:3000`
 ## 🎨 Diseño y UX
 
 ### Animaciones GSAP
+
 - **Elementos flotantes**: Decoraciones animadas en la página principal
 - **Transiciones suaves**: Entre estados y páginas
 - **Efectos de hover**: Interacciones responsivas
 - **Loading states**: Feedback visual durante cargas
 
 ### Componentes UI
+
 - **Diseño consistente**: Basado en shadcn/ui y Radix
 - **Accesibilidad**: Soporte completo para lectores de pantalla
 - **Responsive**: Adaptación automática a diferentes tamaños de pantalla
@@ -206,37 +223,40 @@ La aplicación estará disponible en `http://localhost:3000`
 ### Firestore Collections
 
 #### Users
+
 ```typescript
 {
-  uid: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  displayName: string;
-  photoURL: string | null;
-  bio: string | null;
-  createdAt: Timestamp;
+	uid: string;
+	email: string;
+	firstName: string;
+	lastName: string;
+	displayName: string;
+	photoURL: string | null;
+	bio: string | null;
+	createdAt: Timestamp;
 }
 ```
 
 #### Favorites
+
 ```typescript
 {
-  userId: string;
-  recipeId: number;
-  createdAt: Timestamp;
+	userId: string;
+	recipeId: number;
+	createdAt: Timestamp;
 }
 ```
 
 #### Reviews
+
 ```typescript
 {
-  userId: string;
-  recipeId: number;
-  rating: number;
-  comment: string;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+	userId: string;
+	recipeId: number;
+	rating: number;
+	comment: string;
+	createdAt: Timestamp;
+	updatedAt: Timestamp;
 }
 ```
 
@@ -252,15 +272,18 @@ La aplicación estará disponible en `http://localhost:3000`
 ## 🚀 Deployment
 
 ### Vercel (Recomendado)
+
 ```bash
 npm install -g vercel
 vercel
 ```
 
 ### Variables de entorno en producción
+
 Asegúrate de configurar todas las variables de entorno en tu plataforma de deployment.
 
 ### Consideraciones de producción
+
 - Configura un dominio personalizado
 - Habilita analytics
 - Configura alertas de monitoreo
@@ -298,7 +321,7 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 
 ## 👥 Autor
 
-**Tu Nombre** - [tu-email@example.com](mailto:tu-email@example.com)
+**Aaron Hernandez Jimenez** - [aypierre223@gmail.com](mailto:aypierre223@gmail.com)
 
 ## 🙏 Agradecimientos
 
